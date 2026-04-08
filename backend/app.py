@@ -5,6 +5,7 @@ from routes.users import users_bp
 from routes.projects import projects_bp
 from routes.leaderboard import leaderboard_bp
 from routes.badges import badges_bp
+from routes.tutor import tutor_bp
 
 def create_app():
     app = Flask(__name__)
@@ -21,6 +22,7 @@ def create_app():
     app.register_blueprint(projects_bp, url_prefix="/api/projects")
     app.register_blueprint(leaderboard_bp, url_prefix="/api/leaderboard")
     app.register_blueprint(badges_bp, url_prefix="/api/badges")
+    app.register_blueprint(tutor_bp, url_prefix="/api/tutor")
 
     @app.route("/api/health", methods=["GET"])
     def health():

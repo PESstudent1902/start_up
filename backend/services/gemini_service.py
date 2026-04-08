@@ -1,7 +1,12 @@
 import google.generativeai as genai
 import json
 import re
-from config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_MAX_TOKENS, GEMINI_TEMPERATURE
+import requests
+import base64
+import logging
+from config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_MAX_TOKENS, GEMINI_TEMPERATURE, GITHUB_TOKEN
+
+logger = logging.getLogger(__name__)
 
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -109,36 +114,153 @@ Make sure to generate exactly 8-10 steps. Each step must have meaningful instruc
         return fallback
 
 
-def review_github_submission(github_link: str, project_title: str, track: str) -> dict:
-    """Review a GitHub submission using Gemini AI"""
+def _fetch_github_repo_context(github_link: str) -> dict:
+    """Fetch real content from a public GitHub repository for honest grading."""
+    context = {
+        "description": "",
+        "language": "",
+        "topics": [],
+        "readme": "",
+        "file_tree": [],
+        "stars": 0,
+        "forks": 0,
+        "open_issues": 0,
+        "error": None,
+    }
+    try:
+        # Parse owner/repo from URL like https://github.com/owner/repo[/...]
+        match = re.search(r'github\.com/([^/]+)/([^/?\s#]+)', github_link)
+        if not match:
+            context["error"] = "Could not parse GitHub URL"
+            return context
+
+        owner, repo = match.group(1), match.group(2).rstrip('/')
+        headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+        if GITHUB_TOKEN:
+            headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+
+        # Basic repo info
+        repo_resp = requests.get(
+            f"https://api.github.com/repos/{owner}/{repo}",
+            headers=headers, timeout=8
+        )
+        if repo_resp.status_code == 404:
+            context["error"] = "Repository not found or is private"
+            return context
+        if repo_resp.ok:
+            repo_data = repo_resp.json()
+            context["description"] = repo_data.get("description") or ""
+            context["language"] = repo_data.get("language") or ""
+            context["topics"] = repo_data.get("topics") or []
+            context["stars"] = repo_data.get("stargazers_count", 0)
+            context["forks"] = repo_data.get("forks_count", 0)
+            context["open_issues"] = repo_data.get("open_issues_count", 0)
+
+        # README content (decoded, truncated to 3000 chars)
+        readme_resp = requests.get(
+            f"https://api.github.com/repos/{owner}/{repo}/readme",
+            headers=headers, timeout=8
+        )
+        if readme_resp.ok:
+            readme_data = readme_resp.json()
+            encoded = readme_data.get("content", "")
+            # Guard against maliciously large READMEs (1 MB encoded ≈ 750 KB decoded)
+            if encoded and len(encoded) <= 1_000_000:
+                decoded = base64.b64decode(encoded).decode("utf-8", errors="replace")
+                context["readme"] = decoded[:3000]
+
+        # File tree (top-level files to avoid huge repos)
+        tree_resp = requests.get(
+            f"https://api.github.com/repos/{owner}/{repo}/git/trees/HEAD",
+            headers=headers, timeout=8
+        )
+        if tree_resp.ok:
+            tree_data = tree_resp.json()
+            context["file_tree"] = [
+                item["path"] for item in tree_data.get("tree", [])
+            ][:60]
+
+    except Exception as e:
+        context["error"] = str(e)
+
+    return context
+
+
+def review_github_submission(github_link: str, project_title: str, track: str,
+                              project_steps: list = None) -> dict:
+    """Review a GitHub submission using actual repo content for honest grading."""
+    repo_context = _fetch_github_repo_context(github_link)
+
+    # Build a human-readable snapshot of the repo for Gemini
+    repo_snapshot_parts = []
+    if repo_context.get("error"):
+        repo_snapshot_parts.append(f"⚠️ Repo fetch issue: {repo_context['error']}")
+    else:
+        repo_snapshot_parts.append(f"Primary language: {repo_context['language'] or 'unknown'}")
+        repo_snapshot_parts.append(f"Description: {repo_context['description'] or '(none)'}")
+        if repo_context["topics"]:
+            repo_snapshot_parts.append(f"Topics: {', '.join(repo_context['topics'])}")
+        repo_snapshot_parts.append(f"Stars: {repo_context['stars']}, Forks: {repo_context['forks']}")
+        if repo_context["file_tree"]:
+            repo_snapshot_parts.append(f"Files: {', '.join(repo_context['file_tree'][:30])}")
+        else:
+            repo_snapshot_parts.append("Files: (empty or inaccessible)")
+        if repo_context["readme"]:
+            repo_snapshot_parts.append(f"\nREADME (first 3000 chars):\n{repo_context['readme']}")
+        else:
+            repo_snapshot_parts.append("README: (missing)")
+
+    repo_snapshot = "\n".join(repo_snapshot_parts)
+
+    steps_summary = ""
+    if project_steps:
+        titles = [f"Step {s.get('step_number', i+1)}: {s.get('title', '')}" for i, s in enumerate(project_steps)]
+        steps_summary = "\n".join(titles[:10])
+
     try:
         model = genai.GenerativeModel(GEMINI_MODEL)
 
-        prompt = f"""You are a senior software engineer reviewing a student's project submission for BuildIQ.
+        prompt = f"""You are a strict but fair senior software engineer reviewing a student's BuildIQ project submission.
 
-Project Title: {project_title}
+=== ASSIGNED PROJECT ===
+Title: {project_title}
 Track: {track}
-GitHub Link: {github_link}
+{f"Build Steps the student was supposed to complete:{chr(10)}{steps_summary}" if steps_summary else ""}
 
-Based on the GitHub repository link and project context, provide a realistic code review and score.
+=== SUBMITTED GITHUB REPOSITORY ===
+Link: {github_link}
+{repo_snapshot}
 
-Consider that the GitHub link is: {github_link}
+=== YOUR TASK ===
+1. RELEVANCE CHECK: Does this repository actually implement the assigned project "{project_title}" in the "{track}" track?
+   - If the repo is clearly unrelated (e.g., a different project, a template, a fork with no changes, or empty), give a low score (0-30) and explain why.
+   - If the repo is related but incomplete, score 30-60.
+   - If the repo matches and is well-done, score 60-95.
+
+2. QUALITY CHECK based on the actual README and file structure:
+   - Is there a proper README? (no README = max 50 pts)
+   - Does the file structure match the expected project?
+   - Is there real code (not just a template clone)?
+
+Be HONEST. Do NOT give high scores to repos that are unrelated or empty.
+A random unrelated repository must score below 35 and get a D or F grade.
 
 Return ONLY a valid JSON object:
 {{
-  "score": <number between 40-95>,
-  "overall_feedback": "2-3 sentence summary of the work",
+  "score": <0-95>,
+  "overall_feedback": "2-3 sentence honest summary. If unrelated, state that clearly.",
   "strengths": ["strength 1", "strength 2", "strength 3"],
   "improvements": ["improvement 1", "improvement 2", "improvement 3"],
-  "interview_readiness": "How ready is this project for an interview (1-2 sentences)",
-  "grade": "A/B/C/D"
+  "interview_readiness": "Honest assessment of interview readiness (1-2 sentences)",
+  "grade": "A/B/C/D/F",
+  "relevance_warning": null or "Warning message if repo doesn't match the assigned project"
 }}
 
-Be encouraging but honest. Return ONLY the JSON."""
+Return ONLY the JSON."""
 
         generation_config = genai.types.GenerationConfig(
             max_output_tokens=2048,
-            temperature=0.5,
+            temperature=0.3,
         )
 
         response = model.generate_content(prompt, generation_config=generation_config)
@@ -159,5 +281,53 @@ Be encouraging but honest. Return ONLY the JSON."""
             "strengths": ["Project structure is solid", "Good effort shown", "Project idea is relevant"],
             "improvements": ["Add more documentation", "Include a README with setup steps", "Add comments to code"],
             "interview_readiness": "This project is a good starting point. Polish it with the improvements above.",
-            "grade": "B"
+            "grade": "B",
+            "relevance_warning": None,
         }
+
+
+def ask_tutor(question: str, project_title: str, track: str, step_title: str = "",
+              step_instruction: str = "", conversation_history: list = None) -> str:
+    """Ask the AI tutor a question about the current project step."""
+    try:
+        model = genai.GenerativeModel(GEMINI_MODEL)
+
+        history_text = ""
+        if conversation_history:
+            for msg in conversation_history[-6:]:  # Last 3 exchanges
+                role = "Student" if msg["role"] == "user" else "Aria"
+                history_text += f"{role}: {msg['content']}\n"
+
+        prompt = f"""You are Aria, a warm, brilliant, and patient AI tutor for BuildIQ — a platform that teaches Indian college students real-world tech skills through project-based learning.
+
+Your personality:
+- Friendly, encouraging, and enthusiastic — like a brilliant senior student who genuinely loves teaching
+- You explain concepts simply first, then go deeper if asked
+- You use analogies from everyday Indian life to make things relatable
+- You never just give the answer — you guide students to understand WHY and HOW
+- You celebrate small wins ("Great question!", "You're thinking like a developer!")
+- You're concise but complete — no walls of text, use bullet points when listing steps
+
+Current context:
+- Project: {project_title}
+- Track: {track}
+{f"- Current Step: {step_title}" if step_title else ""}
+{f"- Step instruction: {step_instruction}" if step_instruction else ""}
+
+{f"Conversation so far:{chr(10)}{history_text}" if history_text else ""}
+
+Student's question: {question}
+
+Respond as Aria. Be helpful, clear, and encouraging. If the question is unrelated to the project/learning, gently redirect back to the topic."""
+
+        generation_config = genai.types.GenerationConfig(
+            max_output_tokens=1024,
+            temperature=0.7,
+        )
+
+        response = model.generate_content(prompt, generation_config=generation_config)
+        return response.text.strip()
+
+    except Exception as e:
+        print(f"Tutor error: {e}")
+        return "Hmm, I hit a snag! Try rephrasing your question, and I'll do my best to help you out. 🙂"

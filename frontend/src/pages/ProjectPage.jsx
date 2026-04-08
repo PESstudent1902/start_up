@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import Confetti from '../components/Confetti'
+import TutorChat from '../components/TutorChat'
 
 const ProjectPage = ({ user }) => {
   const navigate = useNavigate()
@@ -11,6 +12,7 @@ const ProjectPage = ({ user }) => {
   const [expandedStep, setExpandedStep] = useState(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [tutorStep, setTutorStep] = useState(null)
 
   const apiUrl = import.meta.env.VITE_API_URL || ''
 
@@ -226,6 +228,13 @@ const ProjectPage = ({ user }) => {
                     </div>
 
                     <button
+                      onClick={() => setTutorStep(step)}
+                      className="w-full py-2.5 rounded-xl font-medium text-sm transition-colors bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-600/30"
+                    >
+                      🎓 Ask Aria about this step
+                    </button>
+
+                    <button
                       onClick={() => toggleStep(step.step_number)}
                       className={`w-full py-2.5 rounded-xl font-medium text-sm transition-colors ${
                         isDone
@@ -257,6 +266,8 @@ const ProjectPage = ({ user }) => {
           </div>
         )}
       </div>
+
+      <TutorChat project={project} currentStep={tutorStep} />
     </div>
   )
 }
