@@ -25,7 +25,8 @@ def create_user():
             return jsonify({"user": result.data[0]}), 201
         return jsonify({"error": "Failed to create user"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Create user error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @users_bp.route("/<user_id>", methods=["GET"])
@@ -37,4 +38,5 @@ def get_user(user_id):
             return jsonify({"user": result.data[0]}), 200
         return jsonify({"error": "User not found"}), 404
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Get user error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500

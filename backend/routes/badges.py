@@ -24,4 +24,5 @@ def get_user_badges(user_id):
 
         return jsonify({"badges": badges}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Get badges error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500

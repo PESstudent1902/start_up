@@ -32,6 +32,12 @@ const Submission = ({ user }) => {
       toast.error('Please enter a valid GitHub URL')
       return
     }
+    // Ensure it starts with the expected GitHub URL pattern
+    const githubPattern = /^https?:\/\/(www\.)?github\.com\/[^/]+\/[^/]+/
+    if (!githubPattern.test(githubLink.trim())) {
+      toast.error('Please enter a valid GitHub repository URL (e.g. https://github.com/user/repo)')
+      return
+    }
 
     setLoading(true)
     try {

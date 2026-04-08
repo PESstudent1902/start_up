@@ -212,7 +212,7 @@ const Onboarding = ({ onUserCreated }) => {
                 <button
                   onClick={handleSubmit}
                   disabled={loading || !form.difficulty}
-                  className="flex-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 px-8 rounded-xl transition-colors flex items-center gap-2"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 px-8 rounded-xl transition-colors flex items-center gap-2"
                 >
                   {loading ? (
                     <>

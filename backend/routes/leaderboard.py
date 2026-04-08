@@ -34,4 +34,5 @@ def get_leaderboard():
 
         return jsonify({"leaderboard": entries}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Get leaderboard error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500

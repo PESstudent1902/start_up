@@ -35,7 +35,8 @@ def generate():
 
         return jsonify({"project": project_data}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Generate project error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @projects_bp.route("/<project_id>/steps", methods=["PUT"])
@@ -53,7 +54,8 @@ def update_steps(project_id):
             return jsonify({"success": True, "project": result.data[0]}), 200
         return jsonify({"error": "Project not found"}), 404
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Update steps error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 @projects_bp.route("/<project_id>/submit", methods=["POST"])
@@ -104,7 +106,8 @@ def submit_project(project_id):
 
         return jsonify({"review": review}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Submit project error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
 
 
 def _check_and_award_badges(user_id: str, score: int, client):
@@ -134,4 +137,5 @@ def get_user_projects(user_id):
         result = client.table("projects").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         return jsonify({"projects": result.data or []}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Get user projects error: {e}")
+        return jsonify({"error": "An internal error occurred"}), 500
