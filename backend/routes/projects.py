@@ -112,7 +112,7 @@ def submit_project(project_id):
 
 def _check_and_award_badges(user_id: str, score: int, client):
     try:
-        projects = client.table("projects").select("*").eq("user_id", user_id).execute()
+        projects = client.table("projects").select("id").eq("user_id", user_id).execute()
         project_count = len(projects.data) if projects.data else 0
 
         existing_badges = client.table("badges").select("badge_name").eq("user_id", user_id).execute()

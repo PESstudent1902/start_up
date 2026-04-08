@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify
 from services.supabase_service import get_client
 
@@ -17,6 +18,13 @@ def get_leaderboard():
 
         if track and track != "all":
             query = query.eq("track", track)
+
+        if period == "this_week":
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            query = query.gte("created_at", cutoff)
+        elif period == "this_month":
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+            query = query.gte("created_at", cutoff)
 
         result = query.execute()
 
