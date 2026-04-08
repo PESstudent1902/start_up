@@ -133,6 +133,14 @@ const Submission = ({ user }) => {
 
         {review && (
           <div className="space-y-4">
+            {/* Relevance Warning */}
+            {review.relevance_warning && (
+              <div className="glass-card rounded-2xl p-5 border border-red-500/40 bg-red-500/10">
+                <h3 className="text-red-400 font-semibold mb-1">⚠️ Project Mismatch Detected</h3>
+                <p className="text-slate-300 text-sm">{review.relevance_warning}</p>
+              </div>
+            )}
+
             {/* Score Card */}
             <div className="glass-card rounded-2xl p-6 text-center">
               <p className="text-slate-400 text-sm mb-2">Your Project Score</p>

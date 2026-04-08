@@ -77,7 +77,17 @@ def submit_project(project_id):
         project_title = project.get("title", "Unknown Project")
         track = project.get("track", "General")
 
-        review = review_github_submission(github_link, project_title, track)
+        # Pass the project steps so the reviewer can check relevance
+        steps_json = project.get("steps_json")
+        project_steps = []
+        if steps_json:
+            try:
+                full_data = json.loads(steps_json)
+                project_steps = full_data.get("steps", [])
+            except Exception:
+                pass
+
+        review = review_github_submission(github_link, project_title, track, project_steps)
         score = review.get("score", 65)
 
         client.table("projects").update({
