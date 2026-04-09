@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
@@ -21,9 +21,10 @@ SUBJECT_TRACKS = [
 
 DIFFICULTY_LEVELS = ["Beginner", "Intermediate", "Advanced"]
 
-GEMINI_MODEL = "gemini-1.5-flash"
-GEMINI_MAX_TOKENS = 8192
-GEMINI_TEMPERATURE = 0.7
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+AI_MODEL = os.getenv("AI_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
+AI_MAX_TOKENS = 8192
+AI_TEMPERATURE = 0.7
 
 BADGE_DEFINITIONS = {
     "first_project": {"name": "First Build", "description": "Completed your first project!", "icon": "🏗️"},
