@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import Confetti from '../components/Confetti'
-import TutorChat from '../components/TutorChat'
+import FoxAssistant from '../components/FoxAssistant'
 
 const ProjectPage = ({ user }) => {
   const navigate = useNavigate()
@@ -13,6 +13,7 @@ const ProjectPage = ({ user }) => {
   const [showConfetti, setShowConfetti] = useState(false)
   const [saving, setSaving] = useState(false)
   const [tutorStep, setTutorStep] = useState(null)
+  const [tutorTrigger, setTutorTrigger] = useState(0)
 
   const apiUrl = import.meta.env.VITE_API_URL || ''
 
@@ -228,10 +229,13 @@ const ProjectPage = ({ user }) => {
                     </div>
 
                     <button
-                      onClick={() => setTutorStep(step)}
-                      className="w-full py-2.5 rounded-xl font-medium text-sm transition-colors bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-600/30"
+                      onClick={() => {
+                        setTutorStep(step)
+                        setTutorTrigger(t => t + 1)
+                      }}
+                      className="w-full py-2.5 rounded-xl font-medium text-sm transition-colors bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 border border-orange-600/30"
                     >
-                      🎓 Ask Aria about this step
+                      🦊 Ask Aria about this step
                     </button>
 
                     <button
@@ -267,7 +271,7 @@ const ProjectPage = ({ user }) => {
         )}
       </div>
 
-      <TutorChat project={project} currentStep={tutorStep} />
+      <FoxAssistant project={project} currentStep={tutorStep} tutorTrigger={tutorTrigger} completedSteps={completedSteps} />
     </div>
   )
 }
