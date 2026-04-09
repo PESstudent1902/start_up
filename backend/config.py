@@ -7,6 +7,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 FLASK_DEBUG = os.getenv("FLASK_DEBUG", "1") == "1"
 
