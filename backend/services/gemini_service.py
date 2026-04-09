@@ -94,7 +94,7 @@ FALLBACK_PROJECTS = [
 ]
 
 
-def _random_fallback(track: str, difficulty: str) -> dict:
+def _random_fallback(difficulty: str) -> dict:
     """Return a varied fallback project so users don't always see the same one."""
     fallback = random.choice(FALLBACK_PROJECTS).copy()
     fallback["difficulty"] = difficulty
@@ -106,14 +106,13 @@ def generate_project(track: str, difficulty: str, stream: str, college: str) -> 
     try:
         client = _get_client()
         theme = random.choice(_PROJECT_THEMES)
-        seed = random.randint(1000, 9999)
 
         prompt = f"""You are an expert industry mentor for Indian college students. Generate a unique, industry-relevant project for a student with the following profile:
 - Subject Track: {track}
 - Difficulty Level: {difficulty}
 - Academic Stream: {stream}
 - College: {college}
-- Theme focus (for variety, seed #{seed}): {theme}
+- Theme focus (vary the project around this): {theme}
 
 Generate a project that:
 1. Is directly relevant to what Indian companies are hiring for RIGHT NOW
@@ -121,9 +120,7 @@ Generate a project that:
 3. Connects to real-world problems the student can explain in an interview
 4. Has 8-10 specific, actionable build steps
 5. Is NOT a tutorial clone — it must be an ORIGINAL project idea
-6. Is themed around: {theme}
-
-Return ONLY a valid JSON object with this exact structure:
+6. Is themed around: {theme}Return ONLY a valid JSON object with this exact structure:
 {{
   "title": "Project title (creative, industry-sounding)",
   "problem_statement": "The real-world problem this project solves (2-3 sentences)",
@@ -165,7 +162,7 @@ Make sure to generate exactly 8-10 steps. Each step must have meaningful instruc
 
     except Exception as e:
         logger.error("AI API error: %s", e)
-        return _random_fallback(track, difficulty)
+        return _random_fallback(difficulty)
 
 
 def _fetch_github_repo_context(github_link: str) -> dict:
