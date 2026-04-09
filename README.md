@@ -9,6 +9,7 @@ Students don't watch videos — they BUILD real industry projects guided by AI.
 - 📊 Step-by-step build roadmap with industry context
 - 🏆 Competitive leaderboard per track
 - 📱 Mobile-first, dark mode UI
+- 🦊 **Aria** — an animated AI fox assistant that monitors your progress and helps you when you're stuck
 
 ## Tech Stack
 - **Frontend**: React 18 + Vite + Tailwind CSS
@@ -16,7 +17,31 @@ Students don't watch videos — they BUILD real industry projects guided by AI.
 - **Database**: Supabase
 - **AI**: Google Gemini 1.5 Flash
 
-## Quick Start
+---
+
+## ⚡ One-Click Launch (Windows / macOS / Linux)
+
+The easiest way to start everything with a single double-click:
+
+### Windows
+1. **Double-click `start.bat`** in the repo root.  
+   The script will create a virtual environment, install all dependencies (first run only), start both servers, and open the app in your browser automatically.
+
+### macOS / Linux
+```bash
+# Make executable once:
+chmod +x start.sh
+
+# Then double-click start.sh in Finder (macOS)
+# or run in terminal:
+./start.sh
+```
+
+> **First run**: The script copies `.env.example` → `.env` in both `backend/` and `frontend/`. Open `backend/.env` and add your `GEMINI_API_KEY` (and optionally Supabase keys) before using AI features.
+
+---
+
+## Manual Setup
 
 ### Prerequisites
 - Node.js 18+
@@ -128,16 +153,18 @@ Visit http://localhost:5173 in your browser.
 
 ```
 start_up/
-├── frontend/          # React + Vite + Tailwind CSS
+├── start.bat              # Windows one-click launcher
+├── start.sh               # macOS / Linux one-click launcher
+├── frontend/              # React + Vite + Tailwind CSS
 │   ├── src/
-│   │   ├── components/  # Navbar, Confetti, LoadingState
-│   │   ├── pages/       # Onboarding, Dashboard, ProjectPage, Leaderboard, Submission
+│   │   ├── components/    # Navbar, Confetti, LoadingState, FoxAssistant
+│   │   ├── pages/         # Onboarding, Dashboard, ProjectPage, Leaderboard, Submission
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   └── package.json
-├── backend/           # Python Flask API
-│   ├── routes/        # users, projects, leaderboard, badges
-│   ├── services/      # gemini_service, supabase_service
+├── backend/               # Python Flask API
+│   ├── routes/            # users, projects, leaderboard, badges, tutor
+│   ├── services/          # gemini_service, supabase_service
 │   ├── app.py
 │   ├── config.py
 │   └── requirements.txt
@@ -158,7 +185,7 @@ start_up/
 ### Frontend (.env)
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_URL` | Backend API URL (leave empty for local proxy) |
+| `VITE_API_URL` | Backend API URL (leave empty to use the built-in Vite proxy) |
 
 ## Deployment
 
