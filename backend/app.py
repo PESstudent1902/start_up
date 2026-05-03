@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect
 from flask_cors import CORS
 from config import FRONTEND_URL, FLASK_DEBUG
 from routes.users import users_bp
@@ -23,6 +23,10 @@ def create_app():
     app.register_blueprint(leaderboard_bp, url_prefix="/api/leaderboard")
     app.register_blueprint(badges_bp, url_prefix="/api/badges")
     app.register_blueprint(tutor_bp, url_prefix="/api/tutor")
+
+    @app.route("/", methods=["GET"])
+    def index():
+        return redirect(FRONTEND_URL)
 
     @app.route("/api/health", methods=["GET"])
     def health():
